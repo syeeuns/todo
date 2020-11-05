@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>My ToDoList</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css"/>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+            integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+            crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+            integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+            crossorigin="anonymous"></script>
+    <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+    <style>
+        .jumbotron {
+            padding: 150px 32px;
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 15px;
+            padding-top: 10px;
+        }
+
+        .form-container {
+            display: none;
+            width: 500px;
+            margin: 20px auto;
+        }
+
+        .alert{
+            display: none;
+            width: 500px;
+            margin: 20px auto;
+        }
+
+        /*#alert-delete, #alert-post{*/
+        /*    display: none;*/
+        /*}*/
+
+
+    </style>
+    <script>
+        $(function (){
+            $('.todo-table').empty();
+            showTodo();
+        })
+
+        function openClose() {
+            let status = $('#form-container').css("display");
+            if (status === "none") {
+                $('.form-container').show();
+                $('#btn-open').text('닫기');
+            } else {
+                $('.form-container').hide();
+                $('#btn-open').text('등록');
+            }
+        }
+
+        function postTodo() {
+            let todo_receive = $('#input-todo').val();
+            if(todo_receive === ''){
+                alert('할 일을 입력해주세요.');
+            }
+            $.ajax({
+                type: 'POST',
+                url:'/list',
+                data: {'todo_receive':todo_receive},
+                success: function (response) {
+                    if (response['result'] === 'success') {
+                        $('#alert-post').show();
+                        window.location.reload();
+                    }
+                }
+            })
+        }
+
+        function showTodo() {
+            $.ajax({
+                type: 'GET',
+                url:'/list',
+                data: {},
+                success: function (response) {
+                    if (response['result'] === 'success') {
+                        let todo = response['todo'];
+
+                        for(let i=0; i<todo.length; i++){
+                            let num = i+1;
+                            let content = todo[i]['todo'];
+
+                            let temp_html =
+                                `<tr id="todo${num}">
+                                  <th scope="row">${num}</th>
+                                  <td id="content${num}">${content}</td>
+                                    <td><button type="button" class="btn btn-light" onclick="done('${num}')" id="btn-done${num}">완료</button></td>
+                                  <td><button type="button" class="btn btn-light" onclick="delTodo('${content}')">삭제</button></td>
+                                </tr>`;
+
+                            $('.todo-table').append(temp_html);
+                        }
+                    }
+                }
+            })
+        }
+
+        function delTodo(content) {
+            $.ajax({
+                type: 'POST',
+                url:'/list/del',
+                data: {'content':content},
+                success: function (response) {
+                    if (response['result'] === 'success') {
+                        $('#alert-delete').show();
+                        window.location.reload();
+                    }
+                }
+            })
+        }
+
+        function done(id){
+                $(`#todo${id}`).css("background-color", "#d4edda");
+                $(`#content${id}`).css("text-decoration", "line-through");
+                $(`#btn-done${id}`).hide();
+
+
+        }
+    </script>
+</head>
+<body>
+<div class="jumbotron">
+    <h1 class="title">My ToDoList</h1>
+    <p class="subtitle">To do list로 스케줄을 관리해보세요.</p>
+    <button type="button" class="btn btn-light" onclick="openClose()" id="btn-open">등록</button>
+</div>
+<div class="form-container" id="form-container">
+    <div class="form-group">
+        <label for="input-todo">To Do</label>
+        <input type="text" class="form-control" id="input-todo" placeholder="할 일을 입력해보세요.">
+    </div>
+    <button type="submit" class="btn btn-light" onclick="postTodo()">등록</button>
+</div>
+
+<div class="alert alert-success alert-dismissible fade show" role="alert" id="alert-post">
+  등록되었습니다.
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+
+<div class="alert alert-danger alert-dismissible fade show" role="alert" id="alert-delete">
+  삭제되었습니다.
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+
+<div class="container">
+<table class="table">
+  <thead>
+    <tr>
+      <th scope="col" style="width: 10%">#</th>
+      <th scope="col" style="width: 50%">할 일</th>
+      <th scope="col" style="width: 20%">완료</th>
+      <th scope="col"style="width: 20%">삭제</th>
+    </tr>
+  </thead>
+  <tbody class="todo-table">
+    <tr>
+      <th scope="row">1</th>
+      <td>할일</td>
+        <td><button type="button" class="btn btn-light" onclick="done()">완료</button></td>
+      <td><button type="button" class="btn btn-light" onclick="delTodo()">삭제</button></td>
+    </tr>
+    <tr>
+      <th scope="row">2</th>
+      <td>Jacob</td>
+      <td>Thornton</td>
+      <td>@fat</td>
+    </tr>
+    <tr>
+      <th scope="row">3</th>
+      <td>Larry</td>
+      <td>the Bird</td>
+      <td>@twitter</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</body>
+</html>
